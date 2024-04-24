@@ -1,0 +1,110 @@
+---
+title: "HW 10"
+author: "Leo Fowler"
+date: "2024-04-22"
+output: html_document
+---
+
+```{r include = FALSE}
+library(moderndive)
+library(dplyr)
+library(ggplot2)
+library(effectsize)
+library(dplyr)
+```
+
+### Problem 1
+
+```{r, echo = FALSE}
+redline <- read.csv("redlining.csv")
+
+redline_lm <- lm(policies ~ minority + fire + age + income, data = redline)
+get_regression_table(redline_lm)
+```
+
+##### The question that we are trying to answer is whether there is an association between the number of FAIR policies and the racial/ethnic composition of a zipciode while adjusting for fire, age, and income. To answer this question I used a linear regression analysis. I created a linear regression model for association between the number of FAIR policies and the racial/ethnic composition of a zipciode while adjusting for fire, age, and income. After creating a linear regression model I made a ragression table and it showed that after adjusting for fire, age, and income, there is a statistically significant association between the number of FAIR policies and the racial/ethnic composition of a zipcode. For every one percent increase of minority residents there is an estimated increase of 0.008 FAIR policies per 100 housing units. The amount of fires also showed a positive association with the number of FAIR policies which indicates that there are more FAIR polcies within areas that have more fires. In conclusion, we found evidence taht there is an association between the number of FAIR policies and the racial/ethnic composition of a zipciode. People in minority dominated areas have more fair policies indicating that they have less access to private insurance. This evidence suggests that private insuarnce companies may be utilizing discriminatory pratices to prohibit minotirites from getting insurance. Stakeholders should be advised that there could be discriminatory practices being used within the company and that they should investigate the practices and help make them non-discriminatory if additional evidence was found.
+
+### Problem 2
+
+#### Part A
+
+```{r, echo = FALSE}
+groceries <- read.csv("groceries.csv")
+
+average_prices <- groceries %>% group_by(Store) %>% summarise(Avg_Price = mean(Price))
+
+ggplot(average_prices, aes(x = reorder(Store, Avg_Price), y = Avg_Price)) + geom_bar(stat = "identity", fill = "blue") + labs(title = "Average Price of Products Across Different Stores", x = "Store", y = "Average Price ($)") + coord_flip() + theme_minimal()
+```
+
+##### This graph displays the average price of products in 14 different grocery store brands.
+
+#### Part B
+
+```{r, echo = FALSE}
+num_stores_product <- groceries %>% group_by(Product) %>% summarise(Num_Stores = n_distinct(Store))
+
+ggplot(num_stores_product, aes(x = Num_Stores, y = reorder(Product, Num_Stores))) + geom_bar(stat = "identity", fill = "lightblue") + labs(title = "Number of Stores Selling Each Product", x = "Number of Stores", y = "Product") + scale_x_continuous(breaks = seq(0, max(num_stores_product$Num_Stores), by = 1))
+```
+
+##### This graph displays the amount of grocery stores that carry each specific product.
+
+#### Part C
+
+```{r, echo = FALSE}
+store_lm <- lm(Price ~ Product + Type, data = groceries)
+
+reg_table <- get_regression_table(store_lm)
+conf_int <- subset(reg_table, term == "Type: Grocery")
+grocery_conf_interval <- c(conf_int$lower_ci, conf_int$upper_ci)
+print(grocery_conf_interval)
+```
+
+##### Compared with ordinary grocery stores (like Albertsons, HEB, or Krogers), convenience stores charge somewhere between -0.92 and -0.41 dollars more for the same product.
+
+#### Part D
+
+```{r, echo = FALSE}
+store_lm <- lm(Price ~ Product + Store, data = groceries)
+
+coeffs<- coef(store_lm)
+
+store_coeffs <- coeffs[grepl("Store", names(coeffs))]
+
+store_coeffs_order <- sort(store_coeffs)
+
+lowest_price <- names(head(store_coeffs_order, 2))
+highest_price <- names(tail(store_coeffs_order, 2))
+
+lowest_price <- sub("Store", "", lowest_price)
+highest_price <- sub("Store", "", highest_price)
+
+cat("The two stores that charge the lowest prices for the same product are:", paste(lowest_price, collapse = ", "), "\n")
+cat("The two stores that charge the highest prices for the same product are:", paste(highest_price, collapse = ", "), "\n")
+```
+
+#### Part E
+
+```{r, echo = FALSE}
+central_heb <- subset(coeffs, names(coeffs) %in% c("StoreH-E-B ", "StoreCentral Market"))
+
+print(central_heb)
+```
+
+##### Based on the coefficients of the model Central Market Charges slightly more than HEB for the same product. Central market has a coeffcient of about -0.57 and HEB has a coefficient of about -0.65. This means that Central market charges about $0.57 less per product than the avergae store and HEB charges $0.65 less per product than the average store. There is a difference of $0.08 between Central Market and HEB with Central Market charging slightly more per product.
+
+#### Part F
+
+```{r, echo = FALSE}
+groceries_10k <- mutate(groceries, Income10K = Income / 10000)
+
+income_lm <- lm(Price ~ Product + Income10K, data = groceries_10k)
+
+coefficients <- coef(income_lm)
+income10k_coef <- coefficients
+standardized_params <- standardize_parameters(income_lm)
+
+print(coefficients["Income10K"])
+print(standardized_params)
+```
+
+##### Consumers in poorer ZIP codes seem to pay more for the same product on average. We know this because the Income10k coefficient of -0.014 indicates that every $10,000 income increases, the price of products drop by $0.014. This shows how rpeople in wealthier ZIP codes pay less for the same products and people in poorer ZIP codes people pay more. A one-standard deviation increase in the income of a ZIP code seems to be associated with a 0.03 standard-deviation decrease in the price that consumers in that ZIP code expect to pay for the same product.
